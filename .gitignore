@@ -1,1 +1,27 @@
-/target
+# Ignore the compiled binary and build artifacts
+/target/
+**/*.rs.bk
+**/*.rs.save
+
+# VS Code settings and extensions
+.vscode/
+
+# JetBrains (RustRover, IntelliJ) project settings
+.idea/
+
+# Backup / temp / swap files
+*.swp
+*.swo
+*.tmp
+*~
+
+# macOS junk
+.DS_Store
+
+# Windows junk
+Thumbs.db
+
+# By convention, ignore any local test data or keys
+.env
+*.log
+*.lock
