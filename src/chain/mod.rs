@@ -30,4 +30,17 @@ mod tests {
         assert_eq!(bc.chain.len(), 3);
         assert!(bc.is_valid_chain());
     }
+
+    #[test]
+    fn test_block_mining() {
+        let block = Block::mine_block(
+            1,
+            String::from("prev_hash"),
+            vec![String::from("Mining test")],
+            3, // difficulty = 3 leading zeroes
+        );
+
+        println!("Mined block: {:#?}", block);
+        assert!(block.hash.starts_with("000"));
+    }
 }

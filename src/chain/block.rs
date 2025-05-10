@@ -75,4 +75,33 @@ impl Block {
         hasher.update(input.as_bytes());
         format!("{:x}", hasher.finalize())
     }
+
+    pub fn mine_block(
+        index: u64,
+        previous_hash: String,
+        data: Vec<String>,
+        difficulty: usize,
+    ) -> Self {
+        let timestamp = Utc::now();
+        let merkle_root = Self::calculate_merkle_root(&data);
+        let mut nonce = 0;
+
+        loop {
+            let hash = Self::calculate_hash(index, timestamp, &previous_hash, &merkle_root, nonce);
+
+            if hash.starts_with(&"0".repeat(difficulty)) {
+                return Block {
+                    index,
+                    timestamp,
+                    previous_hash,
+                    merkle_root,
+                    hash,
+                    nonce,
+                    data,
+                };
+            }
+
+            nonce += 1;
+        }
+    }
 }

@@ -6,6 +6,8 @@ pub struct Blockchain {
 }
 
 impl Blockchain {
+    const DIFFICULTY: usize = 3; // safe default for 5s block interval
+
     pub fn new() -> Self {
         let genesis_block =
             Block::new(0, String::from("0"), vec![String::from("Genesis Block")], 0);
@@ -16,12 +18,14 @@ impl Blockchain {
 
     pub fn add_block(&mut self, data: Vec<String>) {
         let previous_block = self.chain.last().expect("Chain should never be empty");
-        let new_block = Block::new(
+
+        let new_block = Block::mine_block(
             previous_block.index + 1,
             previous_block.hash.clone(),
             data,
-            0, // nonce = 0 for now — PoW/PoP logic comes later
+            Self::DIFFICULTY,
         );
+
         self.chain.push(new_block);
     }
 
