@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use sha2::{Digest, Sha256};
 
+pub const BLOCK_DIFFICULTY: usize = 3;
+
 #[derive(Debug, Clone)]
 pub struct Block {
     pub index: u64,
@@ -10,13 +12,30 @@ pub struct Block {
     pub hash: String,
     pub nonce: u64,
     pub data: Vec<String>, // Later this will be serialized structs, for now use strings
+    pub miner_address: String,
 }
 
 impl Block {
-    pub fn new(index: u64, previous_hash: String, data: Vec<String>, nonce: u64) -> Self {
+    pub fn genesis_block() -> Self {
+        let index = 0;
         let timestamp = Utc::now();
+        let previous_hash = "0".to_string();
+        let data = vec![String::from(
+            "KredChain Genesis Block - 2025: Participation Begins",
+        )];
         let merkle_root = Self::calculate_merkle_root(&data);
-        let hash = Self::calculate_hash(index, timestamp, &previous_hash, &merkle_root, nonce);
+        let nonce = 0;
+        let miner_address = "GENESIS".to_string();
+
+        let hash = Self::calculate_hash(
+            index,
+            timestamp,
+            &previous_hash,
+            &merkle_root,
+            nonce,
+            &miner_address,
+        );
+
         Block {
             index,
             timestamp,
@@ -25,6 +44,7 @@ impl Block {
             hash,
             nonce,
             data,
+            miner_address,
         }
     }
 
@@ -66,10 +86,11 @@ impl Block {
         previous_hash: &str,
         merkle_root: &str,
         nonce: u64,
+        miner_address: &str,
     ) -> String {
         let input = format!(
-            "{}{}{}{}{}",
-            index, timestamp, previous_hash, merkle_root, nonce
+            "{}{}{}{}{}{}",
+            index, timestamp, previous_hash, merkle_root, nonce, miner_address
         );
         let mut hasher = Sha256::new();
         hasher.update(input.as_bytes());
@@ -80,16 +101,23 @@ impl Block {
         index: u64,
         previous_hash: String,
         data: Vec<String>,
-        difficulty: usize,
+        miner_address: String,
     ) -> Self {
         let timestamp = Utc::now();
         let merkle_root = Self::calculate_merkle_root(&data);
         let mut nonce = 0;
 
         loop {
-            let hash = Self::calculate_hash(index, timestamp, &previous_hash, &merkle_root, nonce);
+            let hash = Self::calculate_hash(
+                index,
+                timestamp,
+                &previous_hash,
+                &merkle_root,
+                nonce,
+                &miner_address,
+            );
 
-            if hash.starts_with(&"0".repeat(difficulty)) {
+            if hash.starts_with(&"0".repeat(BLOCK_DIFFICULTY)) {
                 return Block {
                     index,
                     timestamp,
@@ -98,6 +126,7 @@ impl Block {
                     hash,
                     nonce,
                     data,
+                    miner_address,
                 };
             }
 
