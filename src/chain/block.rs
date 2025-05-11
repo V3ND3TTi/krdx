@@ -2,8 +2,6 @@ use crate::config::*;
 use chrono::{DateTime, Utc};
 use sha2::{Digest, Sha256};
 
-pub const BLOCK_DIFFICULTY: usize = 3;
-
 #[derive(Debug, Clone)]
 pub struct Block {
     pub index: u64,
