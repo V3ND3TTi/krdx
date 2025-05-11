@@ -1,4 +1,3 @@
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 use crate::wallet::Wallet;
@@ -27,19 +26,6 @@ impl Transaction {
             signature: signature.to_string(),
             timestamp,
         }
-    }
-
-    pub fn create(
-        sender: &str,
-        recipient: &str,
-        amount: u64,
-        sign_fn: impl Fn(&str) -> String,
-    ) -> Self {
-        let timestamp = Utc::now().timestamp() as u64;
-        let message = format!("{}:{}:{}:{}", sender, recipient, amount, timestamp);
-        let signature = sign_fn(&message);
-
-        Transaction::new(sender, recipient, amount, &signature, timestamp)
     }
 
     pub fn is_valid(&self) -> bool {

@@ -1,4 +1,6 @@
+use crate::transaction::Transaction;
 use base64::{Engine as _, engine::general_purpose};
+use chrono::Utc;
 use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier};
 use rand::rngs::OsRng;
 use ring::signature::{ED25519, UnparsedPublicKey};
@@ -6,17 +8,22 @@ use sha2::{Digest, Sha256};
 
 #[derive(Debug)]
 pub struct Wallet {
-    pub keypair: Keypair,      // stays internal
-    pub public_key: PublicKey, // exposed for faucet tracking / identity
+    pub keypair: Keypair,
+    pub public_key: PublicKey,
+    pub address: String, // base64-encoded public key
 }
 
 impl Wallet {
     pub fn new() -> Self {
         let mut csprng = OsRng;
         let keypair = Keypair::generate(&mut csprng);
+        let public_key = keypair.public;
+        let address = general_purpose::STANDARD.encode(public_key.as_ref());
+
         Wallet {
-            public_key: keypair.public,
             keypair,
+            public_key,
+            address,
         }
     }
 
@@ -54,6 +61,15 @@ impl Wallet {
         public_key
             .verify(message.as_bytes(), &signature_bytes)
             .is_ok()
+    }
+
+    pub fn create_transaction(&self, recipient: &str, amount: u64) -> Transaction {
+        let timestamp = Utc::now().timestamp() as u64;
+        let message = format!("{}:{}:{}:{}", self.address, recipient, amount, timestamp);
+        let signature = self.sign(message.as_bytes());
+        let signature_b64 = general_purpose::STANDARD.encode(signature.as_ref());
+
+        Transaction::new(&self.address, recipient, amount, &signature_b64, timestamp)
     }
 }
 
