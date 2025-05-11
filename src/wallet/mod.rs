@@ -1,5 +1,7 @@
+use base64::{Engine as _, engine::general_purpose};
 use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier};
 use rand::rngs::OsRng;
+use ring::signature::{ED25519, UnparsedPublicKey};
 use sha2::{Digest, Sha256};
 
 #[derive(Debug)]
@@ -32,6 +34,26 @@ impl Wallet {
 
     pub fn verify(&self, message: &[u8], signature: &Signature) -> bool {
         self.keypair.public.verify(message, signature).is_ok()
+    }
+
+    pub fn verify_signature(sender_address: &str, message: &str, signature: &str) -> bool {
+        // Decode the base64 address (public key)
+        let public_key_bytes = match general_purpose::STANDARD.decode(sender_address) {
+            Ok(bytes) => bytes,
+            Err(_) => return false,
+        };
+
+        // Decode the base64 signature
+        let signature_bytes = match general_purpose::STANDARD.decode(signature) {
+            Ok(bytes) => bytes,
+            Err(_) => return false,
+        };
+
+        // Verify the signature using the public key and message
+        let public_key = UnparsedPublicKey::new(&ED25519, public_key_bytes);
+        public_key
+            .verify(message.as_bytes(), &signature_bytes)
+            .is_ok()
     }
 }
 

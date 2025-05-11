@@ -3,6 +3,7 @@ pub mod config;
 pub mod faucet;
 pub mod participation;
 pub mod reward;
+pub mod transaction;
 pub mod utils;
 pub mod validator;
 pub mod wallet;
