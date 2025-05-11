@@ -1,16 +1,16 @@
-use crate::transaction::Transaction;
+use crate::{transaction::Transaction, utils};
 use base64::{Engine as _, engine::general_purpose};
 use chrono::Utc;
 use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier};
 use rand::rngs::OsRng;
 use ring::signature::{ED25519, UnparsedPublicKey};
-use sha2::{Digest, Sha256};
 
 #[derive(Debug)]
 pub struct Wallet {
     pub keypair: Keypair,
     pub public_key: PublicKey,
-    pub address: String, // base64-encoded public key
+    pub address: String,
+    pub btc_address: String,
 }
 
 impl Wallet {
@@ -18,21 +18,16 @@ impl Wallet {
         let mut csprng = OsRng;
         let keypair = Keypair::generate(&mut csprng);
         let public_key = keypair.public;
-        let address = general_purpose::STANDARD.encode(public_key.as_ref());
+        let pubkey_bytes = public_key.as_bytes();
+        let address = general_purpose::STANDARD.encode(pubkey_bytes);
+        let btc_address = utils::btc_style_address(pubkey_bytes);
 
         Wallet {
             keypair,
             public_key,
             address,
+            btc_address,
         }
-    }
-
-    pub fn get_address(&self) -> String {
-        // Convert public key bytes to hex string
-        let pub_bytes = self.keypair.public.as_bytes();
-        let hash = Sha256::digest(pub_bytes);
-        let short_hash = &hash[..20]; // 20 bytes = 160 bits = 40 hex chars
-        format!("KRDx{}", hex::encode(short_hash))
     }
 
     pub fn sign(&self, message: &[u8]) -> Signature {
@@ -63,20 +58,29 @@ impl Wallet {
             .is_ok()
     }
 
-    pub fn create_transaction(&self, recipient: &str, amount: u64) -> Transaction {
+    pub fn create_transaction(&self, recipient: &Wallet, amount: u64) -> Transaction {
         let timestamp = Utc::now().timestamp() as u64;
-        let message = format!("{}:{}:{}:{}", self.address, recipient, amount, timestamp);
+        let message = format!(
+            "{}:{}:{}:{}",
+            self.address, recipient.btc_address, amount, timestamp
+        );
         let signature = self.sign(message.as_bytes());
         let signature_b64 = general_purpose::STANDARD.encode(signature.as_ref());
 
-        Transaction::new(&self.address, recipient, amount, &signature_b64, timestamp)
+        Transaction::new(
+            &self.address,
+            &recipient.btc_address,
+            &recipient.address,
+            amount,
+            &signature_b64,
+            timestamp,
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::wallet::Wallet;
-    use sha2::{Digest, Sha256};
 
     #[test]
     fn test_wallet_signature_and_address() {
@@ -86,11 +90,22 @@ mod tests {
         let sig = wallet.sign(message);
         let valid = wallet.verify(message, &sig);
         assert!(valid, "Signature should verify");
+    }
 
-        let hash = Sha256::digest(wallet.public_key.as_bytes());
-        let short_hash = &hash[..20];
-        let expected_addr = format!("KRDx{}", hex::encode(short_hash));
+    #[test]
+    fn test_wallet_btc_address_generation() {
+        let wallet = Wallet::new();
 
-        assert_eq!(wallet.get_address(), expected_addr);
+        println!("Base64 Address: {}", wallet.address);
+        println!("BTC Address: {}", wallet.btc_address);
+
+        assert!(
+            wallet.btc_address.starts_with("KRDx"),
+            "Bech32 address must start with KRDx"
+        );
+        assert!(
+            wallet.btc_address.len() > 10,
+            "Bech32 address length looks too short"
+        );
     }
 }
