@@ -1,3 +1,4 @@
+use crate::config::*;
 use chrono::{DateTime, Utc};
 use sha2::{Digest, Sha256};
 
@@ -19,10 +20,8 @@ impl Block {
     pub fn genesis_block() -> Self {
         let index = 0;
         let timestamp = Utc::now();
-        let previous_hash = "0".to_string();
-        let data = vec![String::from(
-            "KredChain Genesis Block - 2025: Participation Begins",
-        )];
+        let previous_hash = GENESIS_PREV_HASH.to_string();
+        let data = vec![GENESIS_DATA.to_string()];
         let merkle_root = Self::calculate_merkle_root(&data);
         let nonce = 0;
         let miner_address = "GENESIS".to_string();

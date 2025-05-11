@@ -1,4 +1,5 @@
 pub mod chain;
+pub mod config;
 pub mod faucet;
 pub mod participation;
 pub mod reward;
