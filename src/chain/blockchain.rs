@@ -1,5 +1,6 @@
 use crate::chain::block::Block;
 use crate::chain::ledger::Ledger;
+use crate::config::*;
 
 #[derive(Debug)]
 pub struct CoinbaseDistribution {
@@ -14,12 +15,10 @@ pub struct Blockchain {
     pub dist: CoinbaseDistribution,
 }
 
-const BLOCK_REWARD_KOIN: u64 = 4_200_000_000; // 42 KRD in Koin
-
 impl Blockchain {
     pub fn new(dist: CoinbaseDistribution) -> Self {
         Self {
-            chain: vec![Block::genesis_block()],
+            chain: vec![Block::genesis()],
             ledger: Ledger::new(),
             dist,
         }
@@ -51,10 +50,10 @@ impl Blockchain {
         self.chain.push(new_block);
     }
 
-    pub fn is_valid_chain(&self) -> bool {
-        for i in 1..self.chain.len() {
-            let current = &self.chain[i];
-            let previous = &self.chain[i - 1];
+    pub fn is_valid_chain(chain: &[Block]) -> bool {
+        for i in 1..chain.len() {
+            let current = &chain[i];
+            let previous = &chain[i - 1];
 
             if current.previous_hash != previous.hash {
                 return false;
@@ -73,6 +72,23 @@ impl Blockchain {
                 return false;
             }
         }
+
+        true
+    }
+
+    pub fn replace_chain(&mut self, new_chain: Vec<Block>) -> bool {
+        if new_chain.len() <= self.chain.len() {
+            println!("Received chain is not longer than the current chain. Ignoring.");
+            return false;
+        }
+
+        if !Blockchain::is_valid_chain(&new_chain) {
+            println!("Received chain is invalid. Ignoring.");
+            return false;
+        }
+
+        println!("Replacing chain with the new, valid chain.");
+        self.chain = new_chain;
         true
     }
 }

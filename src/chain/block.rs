@@ -15,7 +15,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn genesis_block() -> Self {
+    pub fn genesis() -> Self {
         let index = 0;
         let timestamp = Utc::now();
         let previous_hash = GENESIS_PREV_HASH.to_string();
